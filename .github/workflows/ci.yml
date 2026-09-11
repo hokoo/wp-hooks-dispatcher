@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality (PHP 8.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer:v2
+      - run: composer validate --strict
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer lint
+      - run: composer test:unit
+
+  integration:
+    name: Integration (PHP ${{ matrix.php }}, WordPress ${{ matrix.wordpress }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.5']
+        wordpress: ['6.7.7', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Download WordPress
+        env:
+          WORDPRESS_VERSION: ${{ matrix.wordpress }}
+        run: |
+          if [ "$WORDPRESS_VERSION" = "latest" ]; then
+            archive_url="https://wordpress.org/latest.tar.gz"
+          else
+            archive_url="https://wordpress.org/wordpress-$WORDPRESS_VERSION.tar.gz"
+          fi
+          curl --fail --location --silent --show-error "$archive_url" \
+            | tar --extract --gzip --directory /tmp
+      - name: Run integration tests
+        env:
+          WP_CORE_DIR: /tmp/wordpress
+        run: composer test:integration
