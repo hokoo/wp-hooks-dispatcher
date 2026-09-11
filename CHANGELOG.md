@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file. The
 project follows [Semantic Versioning](https://semver.org/).
 
+## 1.0.1 - 2026-09-12
+
+- Explain the multisite callback-leakage problem and consumer ownership model
+  directly in the README.
+
 ## 1.0.0 - 2026-09-12
 
 - Add context-aware WordPress action subscriptions.
