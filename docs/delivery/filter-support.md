@@ -2,10 +2,11 @@
 
 ## Delivery status
 
-- Epic E1 status: `review`
-- Batch 1 (T1-T4): `review`; implementation and verification are complete,
-  but the batch is not yet committed.
-- Batch 2 (T5): `waiting_dependency`; it starts after Batch 1 is committed.
+- Epic E1 status: `completed`
+- Batch 1 (T1-T4): `completed` in commit `b6eda31`; implementation and
+  verification are complete.
+- Batch 2 (T5): `completed`; independent epic-level QA passed against the
+  committed Batch 1 artifact.
 - Human approval: the 2026-09-12 request authorizes filter support alongside
   actions; the follow-up authorizes retrospective planning and documentation
   using the existing implementation as the baseline.
@@ -163,7 +164,7 @@ after T1-T4 are committed and available for independent review.
 
 ### T1. Define and document the filter contract
 
-Status: `review`
+Status: `completed`
 
 Goal: make filter behavior and its supported public surface unambiguous to
 consumers and maintainers.
@@ -225,7 +226,7 @@ Verification:
 
 ### T2. Implement context-aware filter subscriptions
 
-Status: `review`
+Status: `completed`
 
 Goal: add production filter support without changing the existing action API.
 
@@ -291,7 +292,7 @@ Verification:
 
 ### T3. Cover filter behavior with isolated unit tests
 
-Status: `review`
+Status: `completed`
 
 Goal: verify the filter contract without depending on a WordPress runtime.
 
@@ -345,7 +346,7 @@ Verification:
 
 ### T4. Verify filters against the native WordPress hook registry
 
-Status: `review`
+Status: `completed`
 
 Goal: prove that the wrapper composes correctly with the real `WP_Hook`
 implementation.
@@ -405,7 +406,7 @@ Verification:
 
 ### T5. Run independent epic QA and close delivery
 
-Status: `waiting_dependency`
+Status: `completed`
 
 Goal: independently verify E1 against its success criteria and leave a durable
 delivery record.
@@ -468,7 +469,7 @@ Verification:
 
 ## Verification evidence
 
-Pre-commit checks run on 2026-09-12:
+Batch 1 checks run on 2026-09-12 and committed as `b6eda31`:
 
 - PHP 8.2.26: `composer check` passed.
 - PHPCS: 22 files passed.
@@ -480,4 +481,35 @@ Pre-commit checks run on 2026-09-12:
 
 ## Delivery closure
 
-Pending Batch 1 commit and independent epic-level QA.
+Batch 1 is committed as `b6eda31`.
+
+Independent epic-level QA result: `pass` on 2026-09-12. The QA reviewer checked
+the committed implementation and documentation against every E1 success
+criterion and the T1-T4 AC and DoD. Evidence included:
+
+- strict Composer validation;
+- PHPCS across all 22 source and test files;
+- 19 unit tests with 39 assertions;
+- 12 integration tests with 21 assertions against the real WordPress 6.7.2
+  `WP_Hook` implementation;
+- explicit negative `acceptedArguments` verification before gateway
+  registration;
+- regression confirmation for all existing action tests;
+- review of filter context matching, pass-through, chaining, metadata,
+  teardown, exception, and self-unsubscription behavior;
+- consistency review across README, public contract, changelog, package
+  metadata, and this delivery plan.
+
+Defects and regressions: none found.
+
+Residual risks:
+
+- Integration tests use the real hook registry but not a database-backed
+  multisite `switch_to_blog()` flow, which remains outside this epic.
+- Local verification ran on PHP 8.2.26 only; the minimum supported PHP 8.1
+  runtime was not separately exercised in this environment.
+
+No human risk acceptance was required. The final readiness sweep found no
+remaining `todo`, `needs_design`, `waiting_dependency`, or `blocked` tasks in
+E1. Release version selection, tagging, pushing, and package publication remain
+out of scope and require a separate owner decision.
