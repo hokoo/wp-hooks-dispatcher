@@ -142,6 +142,7 @@ complete [public contract](docs/contract.md).
 ```shell
 composer install
 composer check
+composer analyse
 WP_CORE_DIR=/path/to/wordpress composer test:integration
 ```
 

@@ -6,28 +6,13 @@ namespace iTRON\wpHooksDispatcher\Tests\Integration;
 
 use InvalidArgumentException;
 use iTRON\wpHooksDispatcher\FilterDispatcher;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use stdClass;
 
-final class WordPressFilterDispatcherTest extends TestCase
+final class WordPressFilterDispatcherTest extends WordPressIntegrationTestCase
 {
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap.php';
-    }
-
-    protected function setUp(): void
-    {
-        $GLOBALS['wp_filter'] = [];
-        $GLOBALS['wp_actions'] = [];
-        $GLOBALS['wp_filters'] = [];
-        $GLOBALS['wp_current_filter'] = [];
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
-
-        $database = new stdClass();
-        $database->prefix = 'wp_';
-        $GLOBALS['wpdb'] = $database;
     }
 
     public function testNativeRegistryPreservesOrderArgumentsAndValueChain(): void
@@ -122,10 +107,10 @@ final class WordPressFilterDispatcherTest extends TestCase
             }
         );
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 2;
+        $GLOBALS['blog_id'] = 2;
         $blogMismatch = apply_filters('dispatcher_test', 'original');
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
+        $GLOBALS['blog_id'] = 1;
         $GLOBALS['wpdb']->prefix = 'wp_2_';
         $prefixMismatch = apply_filters('dispatcher_test', 'original');
 
@@ -138,6 +123,39 @@ final class WordPressFilterDispatcherTest extends TestCase
         self::assertSame(1, $calls);
     }
 
+    public function testNativeRegistryTracksWordPressSwitchAndRestore(): void
+    {
+        $calls = 0;
+        $dispatcher = new FilterDispatcher();
+        $dispatcher->subscribe(
+            'dispatcher_test',
+            static function (string $value) use (&$calls): string {
+                ++$calls;
+
+                return $value . '-filtered';
+            }
+        );
+
+        switch_to_blog(2);
+        $inactive = apply_filters('dispatcher_test', 'original');
+
+        self::assertSame('original', $inactive);
+        self::assertSame(0, $calls);
+        self::assertSame(2, get_current_blog_id());
+        self::assertSame('wp_2_', $GLOBALS['wpdb']->prefix);
+
+        self::assertTrue(restore_current_blog());
+        $restored = apply_filters('dispatcher_test', 'original');
+
+        self::assertSame('original-filtered', $restored);
+        self::assertSame(1, $calls);
+        self::assertSame(1, get_current_blog_id());
+        self::assertSame('wp_', $GLOBALS['wpdb']->prefix);
+        self::assertSame([2, 1], $GLOBALS['wp_hooks_dispatcher_test_cache_switches']);
+        self::assertSame([], $GLOBALS['_wp_switched_stack']);
+        self::assertFalse($GLOBALS['switched']);
+    }
+
     public function testNativeRegistrySelectsOnlyCurrentSiteSubscription(): void
     {
         $dispatcher = new FilterDispatcher();
@@ -146,16 +164,14 @@ final class WordPressFilterDispatcherTest extends TestCase
             static fn (string $value): string => $value . '-site-one'
         );
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 2;
-        $GLOBALS['wpdb']->prefix = 'wp_2_';
+        switch_to_blog(2);
         $dispatcher->subscribe(
             'dispatcher_test',
             static fn (string $value): string => $value . '-site-two'
         );
 
         $siteTwo = apply_filters('dispatcher_test', 'original');
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
-        $GLOBALS['wpdb']->prefix = 'wp_';
+        restore_current_blog();
         $siteOne = apply_filters('dispatcher_test', 'original');
 
         self::assertSame('original-site-two', $siteTwo);

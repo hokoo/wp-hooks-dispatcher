@@ -22,8 +22,7 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict
       - run: composer install --prefer-dist --no-interaction --no-progress
-      - run: composer lint
-      - run: composer test:unit
+      - run: composer check
 
   integration:
     name: Integration (PHP ${{ matrix.php }}, WordPress ${{ matrix.wordpress }})
