@@ -1,4 +1,10 @@
-# wp-hooks-dispatcher
+# wpHooksDispatcher
+
+[![Latest Stable Version](https://img.shields.io/packagist/v/hokoo/wp-hooks-dispatcher.svg?style=flat-square)](https://packagist.org/packages/hokoo/wp-hooks-dispatcher)
+[![Tests](https://img.shields.io/github/actions/workflow/status/hokoo/wp-hooks-dispatcher/ci.yml?branch=master&style=flat-square&label=tests)](https://github.com/hokoo/wp-hooks-dispatcher/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A590%25-brightgreen.svg?style=flat-square)](https://github.com/hokoo/wp-hooks-dispatcher/actions/workflows/ci.yml)
+[![PHP](https://img.shields.io/packagist/dependency-v/hokoo/wp-hooks-dispatcher/php.svg?style=flat-square)](https://packagist.org/packages/hokoo/wp-hooks-dispatcher)
+[![License](https://img.shields.io/packagist/l/hokoo/wp-hooks-dispatcher.svg?style=flat-square)](https://github.com/hokoo/wp-hooks-dispatcher/blob/master/LICENSE)
 
 Prevents a WordPress action or filter callback created for one site from
 running while a different multisite context is active.
