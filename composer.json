@@ -1,6 +1,6 @@
 {
     "name": "hokoo/wp-hooks-dispatcher",
-    "description": "Context-aware WordPress action subscriptions",
+    "description": "Context-aware WordPress action and filter subscriptions",
     "type": "library",
     "license": "MIT",
     "homepage": "https://github.com/hokoo/wp-hooks-dispatcher",

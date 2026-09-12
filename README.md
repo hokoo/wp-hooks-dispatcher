@@ -1,7 +1,7 @@
 # wp-hooks-dispatcher
 
-Prevents a WordPress action callback created for one site from running while a
-different multisite context is active.
+Prevents a WordPress action or filter callback created for one site from
+running while a different multisite context is active.
 
 ## The problem
 
@@ -27,23 +27,25 @@ command, or any application that switches sites dynamically, stale callbacks
 can execute against the wrong context, fail unexpectedly, or keep retired
 object graphs alive.
 
-`add_action()` has no site-context boundary and returns no lifecycle handle for
-the registration.
+`add_action()` and `add_filter()` have no site-context boundary and return no
+lifecycle handle for the registration.
 
 ## What this package does
 
-`ActionDispatcher::subscribe()` captures both the current WordPress blog ID and
-`$wpdb->prefix`, then registers a stable wrapper with the native WordPress hook
-registry. Every time the action fires, the wrapper checks the current values
-before invoking application code:
+`ActionDispatcher::subscribe()` and `FilterDispatcher::subscribe()` capture
+both the current WordPress blog ID and `$wpdb->prefix`, then register a stable
+wrapper with the native WordPress hook registry. Every time the hook fires, the
+wrapper checks the current values before invoking application code:
 
 - both values match: the consumer callback runs normally;
-- either value differs: the callback is skipped;
+- either value differs: the callback is skipped (and filters pass the current
+  value through unchanged);
 - the captured context is restored: delivery resumes while still subscribed;
 - the subscription is removed: delivery stops permanently for that handle.
 
-WordPress still owns action dispatch, priority order, and accepted-argument
-handling. Exceptions from an active callback pass through unchanged.
+WordPress still owns hook dispatch, priority order, filter value chaining, and
+accepted-argument handling. Exceptions from an active callback pass through
+unchanged.
 
 The package deliberately does not switch sites, create site-specific clients,
 or rebind existing subscriptions. The consumer remains responsible for
@@ -62,12 +64,14 @@ never changes site, or for a callback that is intentionally context-neutral.
 ## Requirements
 
 - PHP 8.1 or newer
-- a loaded WordPress runtime providing `add_action()`, `remove_action()`,
+- a loaded WordPress runtime providing the relevant `add_action()` and
+  `remove_action()` or `add_filter()` and `remove_filter()` functions,
   `get_current_blog_id()`, and a string `$wpdb->prefix`
 
 The package has no Composer runtime dependencies beyond PHP. Non-standard or
-isolated bootstraps can inject their own `ActionHookGateway` and
-`SiteContextProvider` instead of using the native WordPress adapters.
+isolated bootstraps can inject their own `ActionHookGateway` or
+`FilterHookGateway` and `SiteContextProvider` instead of using the native
+WordPress adapters.
 
 ## Install
 
@@ -75,7 +79,7 @@ isolated bootstraps can inject their own `ActionHookGateway` and
 composer require hokoo/wp-hooks-dispatcher
 ```
 
-## Use
+## Use actions
 
 Create the dispatcher after WordPress is loaded. Subscribe each site-bound
 callback while its intended site is active, and retain the returned handle for
@@ -103,9 +107,35 @@ The dispatcher registers its own wrapper, not the original consumer callback.
 Consequently, `remove_action($hook, $originalCallback)` cannot remove this
 registration; call `unsubscribe()` on the returned handle instead.
 
-The first stable release manages actions only. Filter semantics are deliberately
-reserved for a future additive release. See the complete
-[public contract](docs/contract.md).
+## Use filters
+
+Filter subscriptions use the same context and lifecycle rules. When the
+captured context is inactive, the wrapper returns the current filtered value
+unchanged so later callbacks continue to receive the correct value:
+
+```php
+use iTRON\wpHooksDispatcher\FilterDispatcher;
+
+$dispatcher = new FilterDispatcher();
+
+$subscription = $dispatcher->subscribe(
+    'the_title',
+    static fn (string $title, int $postId): string =>
+        $title . ' #' . $postId,
+    priority: 10,
+    acceptedArguments: 2
+);
+
+$subscription->unsubscribe();
+```
+
+Filter subscriptions require `acceptedArguments` to be at least `1`. The
+wrapper must receive the current filtered value in order to pass it through
+safely when its captured context is inactive.
+
+As with actions, remove a managed filter through its subscription handle rather
+than by passing the original consumer callback to `remove_filter()`. See the
+complete [public contract](docs/contract.md).
 
 ## Development
 

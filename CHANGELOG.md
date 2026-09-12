@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file. The
 project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- Add context-aware WordPress filter subscriptions.
+- Preserve native filter value chaining, priority, accepted-argument, and
+  ordering semantics.
+- Pass the current filtered value through unchanged outside the captured site
+  context.
+- Add explicit, idempotent filter subscription teardown.
+
 ## 1.0.1 - 2026-09-12
 
 - Explain the multisite callback-leakage problem and consumer ownership model
