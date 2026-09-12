@@ -5,28 +5,13 @@ declare(strict_types=1);
 namespace iTRON\wpHooksDispatcher\Tests\Integration;
 
 use iTRON\wpHooksDispatcher\ActionDispatcher;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use stdClass;
 
-final class WordPressActionDispatcherTest extends TestCase
+final class WordPressActionDispatcherTest extends WordPressIntegrationTestCase
 {
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap.php';
-    }
-
-    protected function setUp(): void
-    {
-        $GLOBALS['wp_filter'] = [];
-        $GLOBALS['wp_actions'] = [];
-        $GLOBALS['wp_filters'] = [];
-        $GLOBALS['wp_current_filter'] = [];
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
-
-        $database = new stdClass();
-        $database->prefix = 'wp_';
-        $GLOBALS['wpdb'] = $database;
     }
 
     public function testNativeRegistryPreservesPriorityOrderAndAcceptedArguments(): void
@@ -82,10 +67,10 @@ final class WordPressActionDispatcherTest extends TestCase
             }
         );
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 2;
+        $GLOBALS['blog_id'] = 2;
         do_action('dispatcher_test');
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
+        $GLOBALS['blog_id'] = 1;
         $GLOBALS['wpdb']->prefix = 'wp_2_';
         do_action('dispatcher_test');
 
@@ -93,6 +78,35 @@ final class WordPressActionDispatcherTest extends TestCase
         do_action('dispatcher_test');
 
         self::assertSame(1, $calls);
+    }
+
+    public function testNativeRegistryTracksWordPressSwitchAndRestore(): void
+    {
+        $calls = 0;
+        $dispatcher = new ActionDispatcher();
+        $dispatcher->subscribe(
+            'dispatcher_test',
+            static function () use (&$calls): void {
+                ++$calls;
+            }
+        );
+
+        switch_to_blog(2);
+        do_action('dispatcher_test');
+
+        self::assertSame(0, $calls);
+        self::assertSame(2, get_current_blog_id());
+        self::assertSame('wp_2_', $GLOBALS['wpdb']->prefix);
+
+        self::assertTrue(restore_current_blog());
+        do_action('dispatcher_test');
+
+        self::assertSame(1, $calls);
+        self::assertSame(1, get_current_blog_id());
+        self::assertSame('wp_', $GLOBALS['wpdb']->prefix);
+        self::assertSame([2, 1], $GLOBALS['wp_hooks_dispatcher_test_cache_switches']);
+        self::assertSame([], $GLOBALS['_wp_switched_stack']);
+        self::assertFalse($GLOBALS['switched']);
     }
 
     public function testNativeRegistryHonorsZeroAcceptedArguments(): void
@@ -124,8 +138,7 @@ final class WordPressActionDispatcherTest extends TestCase
             }
         );
 
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 2;
-        $GLOBALS['wpdb']->prefix = 'wp_2_';
+        switch_to_blog(2);
         $dispatcher->subscribe(
             'dispatcher_test',
             static function () use (&$calls): void {
@@ -134,8 +147,7 @@ final class WordPressActionDispatcherTest extends TestCase
         );
 
         do_action('dispatcher_test');
-        $GLOBALS['wp_hooks_dispatcher_test_blog_id'] = 1;
-        $GLOBALS['wpdb']->prefix = 'wp_';
+        restore_current_blog();
         do_action('dispatcher_test');
 
         self::assertSame(['site-two', 'site-one'], $calls);

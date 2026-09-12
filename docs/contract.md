@@ -1,17 +1,19 @@
 # Public contract
 
-The 1.x line of `wp-hooks-dispatcher` manages WordPress action subscriptions.
-Filter subscriptions are intentionally outside the first stable release.
+The `wp-hooks-dispatcher` package manages WordPress action and filter
+subscriptions that are scoped to the site context in which they were created.
 
 ## Context identity
 
-`ActionDispatcher::subscribe()` captures both values returned by the configured
-`SiteContextProvider`: the WordPress blog ID and current database prefix. The
-subscription compares both values again on every dispatch.
+`ActionDispatcher::subscribe()` and `FilterDispatcher::subscribe()` capture
+both values returned by the configured `SiteContextProvider`: the WordPress
+blog ID and current database prefix. The subscription compares both values
+again on every dispatch.
 
-The consumer callback runs only when both values match exactly. A mismatched
-context is a no-op: no consumer code runs and no value is synthesized. Restoring
-the captured context restores delivery while the subscription remains active.
+The consumer callback runs only when both values match exactly. For an action,
+a mismatched context is a no-op. For a filter, it returns the current filtered
+value unchanged so the native filter chain can continue. Restoring the captured
+context restores delivery while the subscription remains active.
 
 The dispatcher never calls `switch_to_blog()`, rebinds an existing subscription,
 or initializes application objects for another site. The consumer remains
@@ -22,16 +24,22 @@ context is active.
 
 The dispatcher passes the hook name, priority, and accepted-argument count to
 WordPress unchanged. WordPress remains the registry and owns callback ordering,
-including registration order at equal priorities. The package does not replace
-or intercept the global hook registry.
+including registration order at equal priorities and filter value chaining.
+The package does not replace or intercept the global hook registry.
+
+Filter subscriptions require an accepted-argument count of at least one. This
+ensures the context wrapper receives the current filtered value and can return
+it unchanged while inactive. Invalid counts fail before native registration.
 
 ## Lifetime
 
-`subscribe()` returns an `ActionSubscription`. Its `unsubscribe()` method
-removes the exact stable wrapper registered with WordPress. Unsubscription is
-idempotent and terminal for that subscription; create a new subscription to
-register again. Automatic destructor-based removal is deliberately unsupported
-because the WordPress registry itself retains active callbacks.
+`ActionDispatcher::subscribe()` returns an `ActionSubscription`, and
+`FilterDispatcher::subscribe()` returns a `FilterSubscription`. Their
+`unsubscribe()` methods remove the exact stable wrapper registered with
+WordPress. Unsubscription is idempotent and terminal for that subscription;
+create a new subscription to register again. Automatic destructor-based removal
+is deliberately unsupported because the WordPress registry itself retains
+active callbacks.
 
 ## Failures
 
@@ -42,6 +50,7 @@ also remain visible to the caller.
 
 ## Extensibility
 
-`ActionHookGateway` and `SiteContextProvider` are injectable public boundaries
-for tests and non-standard WordPress bootstraps. They do not allow a consumer to
-change the captured identity of an existing subscription.
+`ActionHookGateway`, `FilterHookGateway`, and `SiteContextProvider` are
+injectable public boundaries for tests and non-standard WordPress bootstraps.
+They do not allow a consumer to change the captured identity of an existing
+subscription.
