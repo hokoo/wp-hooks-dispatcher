@@ -6,6 +6,10 @@
 - Approved priority: real multisite integration, adapter failure coverage,
   coverage enforcement, then static analysis.
 - First execution batch: approved by the owner on 2026-09-13.
+- Batch 1 (T1, T2, T4): completed in commit `c7a74bb`.
+- Batch 2 (T3): completed and verified after Batch 1 raised production
+  coverage to 100% of lines and methods, 80.39% of branches, and 76.92% of
+  paths.
 - Delivery branch: `codex/test-hardening`, created from the two local commits
   that were ahead of `origin/master`.
 - Release, tagging, and direct pushes to `master` are out of scope. Delivery is
@@ -235,7 +239,7 @@ Verification:
 
 ### T3. Enforce production coverage in CI
 
-Status: `todo`
+Status: `completed`
 
 Goal: prevent silent erosion of the verified production test surface.
 
@@ -329,7 +333,7 @@ Verification:
 
 ### T5. Run independent QA and deliver through PR
 
-Status: `waiting_dependency`
+Status: `todo`
 
 Goal: independently validate the epic and present all local work for review
 without pushing directly to `master`.

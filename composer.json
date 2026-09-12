@@ -31,6 +31,10 @@
         "analyse": "phpstan analyse --no-progress",
         "lint": "phpcs",
         "test": "phpunit",
+        "test:coverage": [
+            "phpunit --coverage-clover coverage.xml",
+            "@php tools/check-coverage.php coverage.xml 90"
+        ],
         "test:integration": "phpunit --testsuite integration",
         "test:unit": "phpunit --testsuite unit",
         "check": [

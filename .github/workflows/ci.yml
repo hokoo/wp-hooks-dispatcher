@@ -55,3 +55,24 @@ jobs:
         env:
           WP_CORE_DIR: /tmp/wordpress
         run: composer test:integration
+
+  coverage:
+    name: Coverage (PHP 8.1, WordPress 6.7.7)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: pcov
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Download WordPress
+        run: |
+          curl --fail --location --silent --show-error \
+            https://wordpress.org/wordpress-6.7.7.tar.gz \
+            | tar --extract --gzip --directory /tmp
+      - name: Enforce production coverage
+        env:
+          WP_CORE_DIR: /tmp/wordpress
+        run: composer test:coverage

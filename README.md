@@ -144,10 +144,13 @@ composer install
 composer check
 composer analyse
 WP_CORE_DIR=/path/to/wordpress composer test:integration
+XDEBUG_MODE=coverage WP_CORE_DIR=/path/to/wordpress composer test:coverage
 ```
 
 Integration tests load WordPress's real `WP_Hook` implementation from the
-checkout identified by `WP_CORE_DIR`.
+checkout identified by `WP_CORE_DIR`, including its native multisite
+switch/restore lifecycle. The coverage command requires Xdebug or PCOV and
+enforces at least 90% production line coverage.
 
 ## License
 
