@@ -9,6 +9,15 @@
 Prevents a WordPress action or filter callback created for one site from
 running while a different multisite context is active.
 
+> [!IMPORTANT]
+> This package is a temporary workaround for a WordPress Core `WP_Hook`
+> limitation: callback registrations cannot be scoped to an individual
+> Multisite site. The proposed native solution is tracked in
+> [WordPress Core Trac #66097](https://core.trac.wordpress.org/ticket/66097).
+> Once the ticket is resolved in Core and the WordPress version containing the
+> fix has been released, this package will be considered obsolete. Check the
+> ticket status before adopting it in new projects.
+
 ## The problem
 
 The WordPress hook registry is process-global. `switch_to_blog()` changes the
